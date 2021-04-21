@@ -1,4 +1,5 @@
 const { exec } = require("child_process");
+const fs = require("fs");
 const path = require("path");
 
 const outputPath = path.join(__dirname, "outputs");
@@ -15,7 +16,7 @@ const executeCpp = (filepath) => {
     exec(
       `g++ ${filepath} -o ${exepath} && cd ${outputPath} && ./${jobId}`,
       (error, stdout, stderr) => {
-        error && reject(error);
+        error && delete error["cmd"] && reject({ error, stderr });
         stderr && reject(stderr);
         resolve(stdout);
       }

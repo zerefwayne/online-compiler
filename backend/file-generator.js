@@ -1,7 +1,6 @@
 const fs = require("fs");
 const path = require("path");
 const { v4: uuid } = require("uuid");
-const { executeCpp } = require("./runner-cpp");
 
 const dirCodes = path.join(__dirname, "codes");
 
