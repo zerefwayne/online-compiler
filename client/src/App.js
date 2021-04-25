@@ -1,36 +1,39 @@
-import React, { useState } from "react";
-import "./App.css";
 import axios from "axios";
+import "./App.css";
+import React, { useState } from "react";
 
 function App() {
   const [code, setCode] = useState("");
+  const [output, setOutput] = useState("");
 
   const handleSubmit = async () => {
-    console.log("Submitting code", code);
+    const payload = {
+      language: "cpp",
+      code,
+    };
     try {
-      const response = await axios.post("http://localhost:3000/run", { code });
-      console.log(response.data);
+      const { data } = await axios.post("http://localhost:5000/run", payload);
+      setOutput(data.output);
     } catch (err) {
-      err.response && console.error(err.response.data);
+      console.log(err.response);
     }
   };
 
   return (
-    <>
-      <div className="App">
-        <h1>Online Code Compiler</h1>
-        <textarea
-          rows="20"
-          cols="75"
-          value={code}
-          onChange={(e) => {
-            setCode(e.target.value);
-          }}
-        ></textarea>
-        <br />
-        <button onClick={handleSubmit}>Submit</button>
-      </div>
-    </>
+    <div className="App">
+      <h1>Online Code Compiler</h1>
+      <textarea
+        rows="20"
+        cols="75"
+        value={code}
+        onChange={(e) => {
+          setCode(e.target.value);
+        }}
+      ></textarea>
+      <br />
+      <button onClick={handleSubmit}>Submit</button>
+      <p>{output}</p>
+    </div>
   );
 }
 
