@@ -1,36 +1,37 @@
-const cors = require("cors");
 const express = require("express");
+const cors = require("cors");
 
-const { generateFile } = require("./file-generator");
-const { executeCpp } = require("./runner-cpp");
+const { generateFile } = require("./generateFile");
+const { executeCpp } = require("./executeCpp");
 
 const app = express();
 
 app.use(cors());
-app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 
-// routes
 app.get("/", (req, res) => {
-  res.json({ hello: "world" });
+  return res.json({ hello: "world!" });
 });
 
 app.post("/run", async (req, res) => {
   const { language = "cpp", code } = req.body;
+
   if (code === undefined) {
-    return res.status(400).json({ success: false, error: "empty code" });
+    return res.status(400).json({ success: false, error: "Empty code body!" });
   }
   try {
-    const filepath = await generateFile(code, language);
+    // need to generate a c++ file with content from the request
+    const filepath = await generateFile(language, code);
+    // we need to run the file and send the response
     const output = await executeCpp(filepath);
-    return res.status(200).send(output);
+
+    return res.json({ filepath, output });
   } catch (err) {
-    console.log(err);
-    return res.status(500).send(err);
+    res.status(500).json({ err });
   }
 });
 
-// start listening for connections
-app.listen(3000, () => {
-  console.log("Listening on port 3000!");
+app.listen(5000, () => {
+  console.log(`Listening on port 5000!`);
 });
