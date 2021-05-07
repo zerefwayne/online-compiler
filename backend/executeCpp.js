@@ -10,13 +10,13 @@ if (!fs.existsSync(outputPath)) {
 
 const executeCpp = (filepath) => {
   const jobId = path.basename(filepath).split(".")[0];
-  const exepath = path.join(outputPath, jobId);
+  const outPath = path.join(outputPath, `${jobId}.out`);
 
   return new Promise((resolve, reject) => {
     exec(
-      `g++ ${filepath} -o ${exepath} && cd ${outputPath} && ./${jobId}`,
+      `g++ ${filepath} -o ${outPath} && cd ${outputPath} && ./${jobId}.out`,
       (error, stdout, stderr) => {
-        error && delete error["cmd"] && reject({ error, stderr });
+        error && reject({ error, stderr });
         stderr && reject(stderr);
         resolve(stdout);
       }

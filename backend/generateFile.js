@@ -8,7 +8,7 @@ if (!fs.existsSync(dirCodes)) {
   fs.mkdirSync(dirCodes, { recursive: true });
 }
 
-const generateFile = async (content, format) => {
+const generateFile = async (format, content) => {
   const jobId = uuid();
   const filename = `${jobId}.${format}`;
   const filepath = path.join(dirCodes, filename);
