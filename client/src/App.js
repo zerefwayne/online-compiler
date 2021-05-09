@@ -1,6 +1,7 @@
 import axios from "axios";
 import "./App.css";
-import React, { useState } from "react";
+import stubs from './stubs';
+import React, { useState, useEffect } from "react";
 
 function App() {
   const [code, setCode] = useState("");
@@ -8,6 +9,11 @@ function App() {
   const [language, setLanguage] = useState("cpp");
   const [jobId, setJobId] = useState(null);
   const [status, setStatus] = useState(null);
+
+  useEffect(() => {
+    setCode(stubs[language])
+  }, [language])
+
   let pollInterval;
 
   const handleSubmit = async () => {
