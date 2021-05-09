@@ -14,8 +14,8 @@ mongoose.connect(
 );
 
 const { generateFile } = require("./generateFile");
-const { executeCpp } = require("./executeCpp");
-const { executePy } = require("./executePy");
+
+const { addJobToQueue } = require("./jobQueue");
 const Job = require("./models/Job");
 
 const app = express();
@@ -32,40 +32,13 @@ app.post("/run", async (req, res) => {
   if (code === undefined) {
     return res.status(400).json({ success: false, error: "Empty code body!" });
   }
-
-  let job;
-
-  try {
-    // need to generate a c++ file with content from the request
-    const filepath = await generateFile(language, code);
-
-    // write into DB
-    job = await new Job({ language, filepath }).save();
-
-    const jobId = job["_id"];
-    res.status(201).json({ jobId });
-
-    // we need to run the file and send the response
-    let output;
-    job["startedAt"] = new Date();
-    if (language === "cpp") {
-      output = await executeCpp(filepath);
-    } else if (language === "py") {
-      output = await executePy(filepath);
-    }
-    console.log(output);
-
-    job["completedAt"] = new Date();
-    job["output"] = output;
-    job["status"] = "success";
-    await job.save();
-  } catch (err) {
-    console.error(err);
-    job["completedAt"] = new Date();
-    job["output"] = JSON.stringify(err);
-    job["status"] = "error";
-    await job.save();
-  }
+  // need to generate a c++ file with content from the request
+  const filepath = await generateFile(language, code);
+  // write into DB
+  const job = await new Job({ language, filepath }).save();
+  const jobId = job["_id"];
+  addJobToQueue(jobId);
+  res.status(201).json({ jobId });
 });
 
 app.get("/status", async (req, res) => {
