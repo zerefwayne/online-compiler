@@ -6,6 +6,8 @@ function App() {
   const [code, setCode] = useState("");
   const [output, setOutput] = useState("");
   const [language, setLanguage] = useState("cpp");
+  const [jobId, setJobId] = useState(null);
+  const [status, setStatus] = useState(null);
 
   const handleSubmit = async () => {
     const payload = {
@@ -14,11 +16,20 @@ function App() {
     };
     try {
       setOutput("");
+      setStatus(null);
+      setJobId(null);
       const { data } = await axios.post("http://localhost:5000/run", payload);
-      setOutput(data.output);
+      if (data.jobId) {
+        setJobId(data.jobId);
+        setStatus("Submitted.");
+      } else {
+        setOutput("Retry again.");
+      }
     } catch ({ response }) {
-      const errMsg = response.data.err.stderr;
-      setOutput(errMsg);
+      if (response) {
+        const errMsg = response.data.err.stderr;
+        setOutput(errMsg);
+      }
     }
   };
 
@@ -48,6 +59,8 @@ function App() {
       ></textarea>
       <br />
       <button onClick={handleSubmit}>Submit</button>
+      <p>{status}</p>
+      <p>{jobId ? `Job ID: ${jobId}` : ""}</p>
       <p>{output}</p>
     </div>
   );
