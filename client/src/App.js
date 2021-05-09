@@ -8,6 +8,7 @@ function App() {
   const [language, setLanguage] = useState("cpp");
   const [jobId, setJobId] = useState(null);
   const [status, setStatus] = useState(null);
+  let pollInterval;
 
   const handleSubmit = async () => {
     const payload = {
@@ -22,6 +23,32 @@ function App() {
       if (data.jobId) {
         setJobId(data.jobId);
         setStatus("Submitted.");
+
+        // poll here
+        pollInterval = setInterval(async () => {
+          const { data: statusRes } = await axios.get(
+            `http://localhost:5000/status`,
+            {
+              params: {
+                id: data.jobId,
+              },
+            }
+          );
+          const { success, job, error } = statusRes;
+          console.log(statusRes);
+          if (success) {
+            const { status: jobStatus, output: jobOutput } = job;
+            setStatus(jobStatus);
+            if(jobStatus === "pending") return;
+            setOutput(jobOutput);
+            clearInterval(pollInterval);
+          } else {
+            console.error(error);
+            setOutput(error);
+            setStatus("Bad request");
+            clearInterval(pollInterval);
+          }
+        }, 1000);
       } else {
         setOutput("Retry again.");
       }
@@ -29,6 +56,8 @@ function App() {
       if (response) {
         const errMsg = response.data.err.stderr;
         setOutput(errMsg);
+      } else {
+        setOutput("Please retry submitting.");
       }
     }
   };
