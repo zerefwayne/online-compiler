@@ -32,29 +32,58 @@ app.post("/run", async (req, res) => {
   if (code === undefined) {
     return res.status(400).json({ success: false, error: "Empty code body!" });
   }
+
+  let job;
+
   try {
     // need to generate a c++ file with content from the request
     const filepath = await generateFile(language, code);
 
     // write into DB
-    const job = await new Job({ language, filepath }).save();
+    job = await new Job({ language, filepath }).save();
 
     const jobId = job["_id"];
     res.status(201).json({ jobId });
 
     // we need to run the file and send the response
     let output;
+    job["startedAt"] = new Date();
     if (language === "cpp") {
       output = await executeCpp(filepath);
     } else if (language === "py") {
       output = await executePy(filepath);
     }
     console.log(output);
-    // return res.json({ filepath, output });
+
+    job["completedAt"] = new Date();
+    job["output"] = output;
+    job["status"] = "success";
+    await job.save();
   } catch (err) {
     console.error(err);
-    // res.status(500).json({ err });
+    job["completedAt"] = new Date();
+    job["output"] = JSON.stringify(err);
+    job["status"] = "error";
+    await job.save();
   }
+});
+
+app.get("/status", async (req, res) => {
+  const jobId = req.query.id;
+
+  if (jobId === undefined) {
+    return res
+      .status(400)
+      .json({ success: false, error: "missing id query param" });
+  }
+
+  const job = await Job.findById(jobId);
+
+  if (job === undefined) {
+    return res.status(400).json({ success: false, error: "couldn't find job" });
+  }
+
+  return res.status(200).json({ success: true, job });
 });
 
 app.listen(5000, () => {
