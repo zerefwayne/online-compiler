@@ -1,7 +1,8 @@
 import axios from "axios";
 import "./App.css";
-import stubs from './stubs';
+import stubs from "./stubs";
 import React, { useState, useEffect } from "react";
+import moment from "moment";
 
 function App() {
   const [code, setCode] = useState("");
@@ -9,10 +10,16 @@ function App() {
   const [language, setLanguage] = useState("cpp");
   const [jobId, setJobId] = useState(null);
   const [status, setStatus] = useState(null);
+  const [jobDetails, setJobDetails] = useState(null);
 
   useEffect(() => {
-    setCode(stubs[language])
-  }, [language])
+    setCode(stubs[language]);
+  }, [language]);
+
+  useEffect(() => {
+    const defaultLang = localStorage.getItem("default-language") || "cpp";
+    setLanguage(defaultLang);
+  }, []);
 
   let pollInterval;
 
@@ -25,6 +32,7 @@ function App() {
       setOutput("");
       setStatus(null);
       setJobId(null);
+      setJobDetails(null);
       const { data } = await axios.post("http://localhost:5000/run", payload);
       if (data.jobId) {
         setJobId(data.jobId);
@@ -45,7 +53,8 @@ function App() {
           if (success) {
             const { status: jobStatus, output: jobOutput } = job;
             setStatus(jobStatus);
-            if(jobStatus === "pending") return;
+            setJobDetails(job);
+            if (jobStatus === "pending") return;
             setOutput(jobOutput);
             clearInterval(pollInterval);
           } else {
@@ -68,6 +77,27 @@ function App() {
     }
   };
 
+  const setDefaultLanguage = () => {
+    localStorage.setItem("default-language", language);
+    console.log(`${language} set as default!`);
+  };
+
+  const renderTimeDetails = () => {
+    if (!jobDetails) {
+      return "";
+    }
+    let { submittedAt, startedAt, completedAt } = jobDetails;
+    let result = "";
+    submittedAt = moment(submittedAt).toString();
+    result += `Job Submitted At: ${submittedAt}  `;
+    if (!startedAt || !completedAt) return result;
+    const start = moment(startedAt);
+    const end = moment(completedAt);
+    const diff = end.diff(start, "seconds", true);
+    result += `Execution Time: ${diff}s`;
+    return result;
+  };
+
   return (
     <div className="App">
       <h1>Online Code Compiler</h1>
@@ -76,12 +106,21 @@ function App() {
         <select
           value={language}
           onChange={(e) => {
-            setLanguage(e.target.value);
+            const shouldSwitch = window.confirm(
+              "Are you sure you want to change language? WARNING: Your current code will be lost."
+            );
+            if (shouldSwitch) {
+              setLanguage(e.target.value);
+            }
           }}
         >
           <option value="cpp">C++</option>
           <option value="py">Python</option>
         </select>
+      </div>
+      <br />
+      <div>
+        <button onClick={setDefaultLanguage}>Set Default</button>
       </div>
       <br />
       <textarea
@@ -96,6 +135,7 @@ function App() {
       <button onClick={handleSubmit}>Submit</button>
       <p>{status}</p>
       <p>{jobId ? `Job ID: ${jobId}` : ""}</p>
+      <p>{renderTimeDetails()}</p>
       <p>{output}</p>
     </div>
   );
